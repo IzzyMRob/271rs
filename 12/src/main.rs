@@ -2,8 +2,9 @@
 use chrono::prelude::*;
 use polars::prelude::*;
 
+fn main() {
 // create mutable data frame
-let df: DataFrame = df!(
+    let my_frame = df!(
     "name" => ["Alice Archer", "Ben Brown", "Chloe Cooper", "Daniel Donovan"],
     "birthdate" => [
         NaiveDate::from_ymd_opt(1997, 1, 10).unwrap(),
@@ -15,6 +16,7 @@ let df: DataFrame = df!(
     "height" => [1.56, 1.77, 1.65, 1.75],  // (m)
 )
 .unwrap();
-println!("{df}");fn main() {
-    println!("Hello, world!");
+
+// print the things
+println!("{my_frame}");
 }
