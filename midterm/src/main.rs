@@ -1,6 +1,9 @@
 use std::io::{stdin, Read, Write};
 use std::fs::File;
 
+// how to type a filename into command line:
+// idk
+
 fn main() {
     println!("File to read:");
     let mut filename = String::new();
@@ -16,10 +19,10 @@ fn main() {
         let t = long_bytes.next().map(|v| v.unwrap());
         match (f,s,t) {
             (Some(f), Some(s), Some(t)) => {
-                let s_one = f & 0b00111111;
-                let s_two = f >> 6 | s << 2;
-                let s_three = s << 4 | t >> 6;
-                let s_four = t & 0b11111100;
+                let s_one = f >> 2;
+                let s_two = (f & 0b11) << 4 | s >> 4;
+                let s_three = ((s & 0b1111) << 2) | t >> 6;
+                let s_four = (t << 2) >> 2;
                 let (c_one, c_two, c_three, c_four) =
                     (
                         num_to_char(s_one),
@@ -31,17 +34,33 @@ fn main() {
                 continue 'main;
             }
             (Some(f), Some(s), None) => {
-                let s_one = f & 0b00111111;
-                let s_two = f >> 6 | s << 2;
-                let s_three = s >> 4;
-                let s_four = '=';
+                let s_one = f >> 2;
+                let s_two = (f & 0b11) << 4 | s >> 4;
+                let s_three = ((s & 0b1111) << 2);
+                let s_four = b'=';
+                let (c_one, c_two, c_three, c_four) =
+                    (
+                        num_to_char(s_one),
+                        num_to_char(s_two),
+                        num_to_char(s_three),
+                        s_four,
+                     );
+                out_file.write(&[c_one, c_two, c_three, s_four]);
                 break 'main
             }
             (Some(f), None, None) => {
-                let s_one = f & 0b00111111;
-                let s_two = f >> 6;
-                let s_three = '=';
-                let s_four = '=';
+                let s_one = f >> 2;
+                let s_two = (f & 0b11) << 4;
+                let s_three = b'=';
+                let s_four = b'=';
+                let (c_one, c_two, c_three, c_four) =
+                    (
+                        num_to_char(s_one),
+                        num_to_char(s_two),
+                        s_three,
+                        s_four,
+                     );
+                out_file.write(&[c_one, c_two, s_three, s_four]);
                 break 'main;
             }
             (None,None,None) =>{
@@ -50,7 +69,7 @@ fn main() {
             _ => unreachable!(),
         }
      }
-
+     write!(out_file, "\n");
 }
 
 
