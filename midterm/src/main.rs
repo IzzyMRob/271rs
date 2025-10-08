@@ -1,5 +1,5 @@
-use std::io
-use std::fs::File::{Read,Write}
+use std::io::{stdin, Read, Write};
+use std::fs::File;
 
 fn main() {
     println!("File to read:");
@@ -9,7 +9,7 @@ fn main() {
     let mut out_file = File::create("out.txt").unwrap();
     let mut in_file = File::open(filename.trim()).unwrap();
     
-    let long_bytes = in_file.bytes();
+    let mut long_bytes = in_file.bytes();
     'main: loop {
         let f = long_bytes.next().map(|v| v.unwrap());
         let s = long_bytes.next().map(|v| v.unwrap());
@@ -27,7 +27,7 @@ fn main() {
                         num_to_char(s_three),
                         num_to_char(s_four),
                      );
-                out_file.write(&[c_one,c_two,c_three,c_four]);
+                out_file.write(&[c_one, c_two, c_three, c_four]);
                 continue 'main;
             }
             (Some(f), Some(s), None) => {
@@ -54,13 +54,13 @@ fn main() {
 }
 
 
-fn num_to_char(n : u8) -> char {
-    letters = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+fn num_to_char(n : u8) -> u8 {
+    let letters = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
     match n {
-        0..52 => letters[n as usize] as char,
-        52..62 => (n - 52) as char,
-        62 => '+',
-        63 => '/',
+        0..52 => letters[n as usize],
+        52..62 => (n - 52),
+        62 => b'+',
+        63 => b'/',
         _ => panic!("number {} not in range", n)
     }
 }
