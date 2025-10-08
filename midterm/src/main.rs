@@ -25,15 +25,15 @@ fn main() {
             (Some(f), Some(s), None) => {
                 let s_one = f & 0b00111111;
                 let s_two = f >> 6 | s << 2;
-                let s_three = s >> 4
-                let s_four = 
+                let s_three = s >> 4;
+                let s_four = '=';
                 break 'main
             }
             (Some(f), None, None) => {
                 let s_one = f & 0b00111111;
                 let s_two = f >> 6;
-                let s_three = 
-                let s_four =
+                let s_three = '=';
+                let s_four = '=';
                 break 'main;
             }
             (None,None,None) =>{
