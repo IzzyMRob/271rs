@@ -1,0 +1,12 @@
+Notes:
+
+Midterm Prep:
+base 64 default behavior:
+  string of asci characters "Many hands"
+  "Man" is asci characters 77,97,110
+  which are binary values
+  which are joined into 24 bits
+  grouped into 6 bits
+  converted into numbers
+  converted into base64 characters
+
