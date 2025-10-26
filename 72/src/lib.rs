@@ -84,18 +84,29 @@ fn add_mag(a : &Vec<u64>, b : &Vec<u64>) -> Vec<u64>{
     // add each digit from the start with the current carry
     let mut carry = 0;
     let mut sum : Vec<u64> = vec!();
+    let mut length = a.len();
     for (one, two) in a.iter().zip(b.iter()) {
         // error from not pading 0s before number of it's short??
-        let digit = one.wrapping_add(*two) + carry;
+        let digit = (one.wrapping_add(*two) + carry);
         carry = 0;
         // reset the carry for the new case, if we wrapped (none) carry = 1
         if one.checked_add(*two).is_none() {
             carry = 1;
         }
-        // diff from max to a, subtract that from b
         sum.push(digit);
+        // how many times larger is it,
+        let mut count = 0;
+        let mut cdigit = digit.clone();
+        while cdigit >= 0x1 {
+            cdigit = cdigit / 0xf0;
+            count += 1;
+        }
+        for _ in 0..(16-count) {
+            sum.push(0);
+        }
+        length -= 1;
         // if sum.len is a.len and carry = 1, push 1
-        if sum.len() == a.len() && carry == 1{
+        if length == 0 && carry == 1{
             sum.push(1);
         }
     }
