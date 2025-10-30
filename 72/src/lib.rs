@@ -54,12 +54,21 @@ pub fn add_ix(a : &ix, b : &ix) -> ix{
 
 pub fn sub_ix(a : &ix, b : &ix) -> ix{
     // adds with one sign flipped
-    let b = ix {
-        sign: !b.sign,
-        vals: b.vals.clone(),
+    let mut sign : bool;
+    match greater_mag(a, b) {
+        true => {
+            sign = a.sign;
+        }
+        false =>{
+            sign = b.sign;
+        }
     };
-    return add_ix(&a, &b);
-
+    let vals = sub_mag(&a.vals, &b.vals);
+    let difference = ix {
+        sign,
+        vals,
+    };
+    return difference
 }
 
 fn greater_mag(a : &ix, b : &ix) -> bool{
@@ -115,47 +124,26 @@ fn add_mag(a : &Vec<u64>, b : &Vec<u64>) -> Vec<u64>{
 }
 
 fn sub_mag(a : &Vec<u64>, b : &Vec<u64>) -> Vec<u64> {
-    // one value is negative
     // we need to handle a and b being larger
     let mut sum : Vec<u64> = vec!();
     let mut carry = 0;
-    match a > b {
-        true => {
-            // a - b
-            for (one, two) in a.iter().zip(b.iter()) {
-                match one > two {
-                    true => {
-                        // no carying needed
-                        let digit = one - two - carry;
-                        sum.push(digit);
-                    },
-                    false => {
-                        // carrying needed
-                        let digit = 16 + one - two - carry;
-                        carry *= 16;
-                        sum.push(digit);
-                    },
-                }
-            }
+    for (one, two) in a.iter().zip(b.iter()) {       
+        let digit = one.wrapping_sub(*two).wrapping_sub(carry);
+        carry = 0;
+        if one.checked_sub(*two).is_none() {
+            carry = 1;
         }
-        false => {
-            // b - a
-            for (one, two) in b.iter().zip(a.iter()) {
-                match one > two {
-                    true => {
-                        // no carrying
-                        let digit = one - two - carry;
-                        sum.push(digit);
-                    },
-                    false => {
-                        // carrying
-                        let digit = 16 + one - two - carry;
-                        carry *= 16;
-                        sum.push(digit);
-                    },
-                }
-            }
+        sum.push(digit);
+        let mut count : u8 = 0;
+        let mut cdigit = digit.clone();
+        while cdigit >= 0x1 {
+            cdigit = cdigit / 0x10;
+            count += 1;
+        };
+        for _ in 0..(16-count) {
+            sum.push(0);
         }
-    }
+
+    };
     return sum
 }

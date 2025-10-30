@@ -39,6 +39,9 @@ fn h2i_ix(a : &str) -> ix {
 }
 
 fn see_ix(a : &ix) {
+    if !a.sign {
+        print!("-");
+    }
     for chunk in a.vals.iter().rev() {
         print!("{:x}", chunk);
     }
