@@ -71,12 +71,33 @@ fn edwards(P: &Vec<BigInt>, Q: &Vec<BigInt>, q_val: &BigInt, d: &BigInt) -> Vec<
 
 
 fn scalarmult(p: &Vec<BigInt>, e: &BigInt, q: &BigInt, d: &BigInt) -> Vec<BigInt> {
-
+    let zero = BigInt::zero();
+    let one = BigInt::from(1);
+    if *e == zero {
+        return vec!(zero, one);
+    }
+    let Q = scalarmult(p, &(e / 2), q, d);
+    let Q = edwards(&Q, &Q, q, d);
+    _ = (e & one) != zero && edwards(&Q, p, q, d)[0] != zero;
+    return Q;
 }
 
 
 fn encodeint(y: &BigInt, b: usize) -> Vec<u8> {
-
+    let one = BigInt::from(1);
+    let bits = vec!();
+    for i in 0..b {
+        bits.push((y >> i) & one)
+    };
+    let bytes : Vec<u8>;
+    for i in 0..(b / 8) {
+        let inner : u8 = 0;
+        for j in 0..8 {
+            inner += (bits[i * 8 + j] << j).to_u8().expect("Too big");
+        }
+        bytes.push(inner);
+    }
+    return bytes
 }
 
 
