@@ -7,11 +7,11 @@ use sha2::{Digest, Sha512};
 // --- Global Helpers (No Dependencies) ---
 
 // hash input with sha512
-fn h(m: &[u8]) -> Vec<u8> {
+fn H(m: &[u8]) -> Vec<u8> {
     let mut sha512 = Sha512::new();
     sha512.update(m);
     let mut array = sha512.finalize();
-    let mut result : Vec<u8>;
+    let mut result : Vec<u8> = vec!();
     for val in array.iter() {
         result.push(*val as u8);
     }
@@ -85,11 +85,11 @@ fn scalarmult(p: &Vec<BigInt>, e: &BigInt, q: &BigInt, d: &BigInt) -> Vec<BigInt
 
 fn encodeint(y: &BigInt, b: usize) -> Vec<u8> {
     let one = BigInt::from(1);
-    let bits = vec!();
+    let mut bits = vec!();
     for i in 0..b {
         bits.push((y >> i) & one)
     };
-    let bytes : Vec<u8>;
+    let mut bytes : Vec<u8> = vec!();
     for i in 0..(b / 8) {
         let inner : u8 = 0;
         for j in 0..8 {
@@ -102,22 +102,60 @@ fn encodeint(y: &BigInt, b: usize) -> Vec<u8> {
 
 
 fn encodepoint(p: &Vec<BigInt>, b: usize) -> Vec<u8> {
-
+    let one = BigInt::from(1);
+    let x = p[0];
+    let y = p[1];
+    let mut bits = vec!();
+    for i in 0..(b-1) {
+        bits.push((y >> i) & one);
+    }
+    let mut bytes : Vec<u8> = vec!();
+    bits.push(x & one);
+    for i in 0..(b / 8) {
+        let inner : u8 = 0;
+        for j in 0..8 {
+            inner += (bits[i * 8 + j] << j).to_u8().expect("Too big");
+        }
+        bytes.push(inner);
+    }
+    return bytes
 }
 
 
 pub fn publickey(sk: &[u8], b: usize, q: &BigInt, d: &BigInt, b_point: &Vec<BigInt>) -> Vec<u8> {
-
+    let h = H(sk);
+    let mut sum = 0;
+    for i in 3..(b-2) {
+        sum += 2_u32.pow(i as u32) * (bit(&h, i) as u32);
+    }
+    let a = 2_u32.pow((b - 2) as u32) + sum;
+    let A = scalarmult(b_point, &BigInt::from(a), q, d);
+    return encodepoint(&A, b);
 }
 
 
 fn hint(m: &[u8], b: usize) -> BigInt {
-
+    let h = H(m);
+    let mut sum = BigInt::from(0);
+    for i in 0..(2 * b) {
+        sum += 2_u32.pow(i as u32) * (bit(&h, i) as u32);
+    }
+    return sum
 }
 
 
 pub fn signature(m: &[u8], sk: &[u8], pk: &[u8], b: usize, q: &BigInt, l: &BigInt, d: &BigInt, b_point: &Vec<BigInt>) -> Vec<u8> {
-
+    let h = H(sk);
+    let mut sum = 0;
+    for i in 3..(b - 2) {
+        sum += 2_u32.pow(i as u32) * (bit(&h, i) as u32);
+    }
+    let a = 2_u32.pow((b - 2) as u32) + sum;
+    let r = hint(&concatenate_arrays(h[b / 8..b / 4], m), b);
+    let R = scalarmult(b_point, &r, q, d);
+    let h_sig = hint(encodepoint(&R, b).push(pk).push(m));
+    let S = (r + h_sig * a) % 1;
+    return encodepoint(&R, b) + encodeint(&S, b);
 }
 
 
