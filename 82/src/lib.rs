@@ -169,12 +169,43 @@ fn isoncurve(p: &Vec<BigInt>, q: &BigInt, d: &BigInt) -> bool {
 
 
 fn decodeint(s: &[u8], b: usize) -> BigInt {
+    let mut sum = BigInt::zero();
+    for i in 0..(b) {
+        sum += 2_u32.pow(i as u32) * (bit(s, i) as u32);
+    };
+    return sum
+}
 
+fn decodepoint(s : &[u8], b : usize, q : &BigInt, d : &BigInt, I :&BigInt) -> Vec<BigInt> {
+    let mut y = BigInt::zero();
+    for i in 0..(b-1) {
+        y += 2_u32.pow(i as u32) * (bit(s, i) as u32);
+    }
+    let x = xrecover(&y, q, d, I);
+    let P = [x, y];
+    if !isoncurve(P, q, d) {
+        panic!("decodig point that is not on curve")
+    }
+    return P;
 }
 
 
 pub fn checkvalid(s: &[u8], m: &[u8], pk: &[u8], b: usize, q: &BigInt, d: &BigInt, i_const: &BigInt, b_point: &Vec<BigInt>) -> bool {
+    if s.len() != b.div_floor(&(4 as usize)) {
+        panic!("signature length wrong");
+    } if pk.len() != b.div_floor(&(8 as usize)) {
+        panic!("public-key length os wrong");
+    }
 
+    let R = decodepoint(s[0..b.div_floor(&(8 as usize))]);
+    let A = decodepoint(pk);
+    let S = decodepoint(s[b.div_floor(8 as usize)..b.div_floor(&(4 as usize))]);
+    let h = hint([encodepoint(R), pk, m].concat());
+    return scalarmult(b_point, S) == edwards(R, scalarmult(A, h));
 }
 
 // chat are we lowkey cooking this or are we about to be cooked
+//
+// 11/2/2025 - 1:26am - well chat we have like 41 errors
+//
+// 11/2/2025 - 1:47am - 51 errors but like progress ig
