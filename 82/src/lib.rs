@@ -1,7 +1,8 @@
 use num_bigint::BigInt;
 use num_traits::{Zero, One, ToPrimitive, Euclid};
-use num_integer::Integer;
+use num_integer::{Integer,div_floor};
 use sha2::{Digest, Sha512};
+use concat_arrays::concat_arrays;
 
 
 // --- Global Helpers (No Dependencies) ---
@@ -21,7 +22,7 @@ fn H(m: &[u8]) -> Vec<u8> {
 
 // bit(h: bytes, i: int) -> int
 fn bit(h_val: &[u8], i: usize) -> u8 {
-    return (h_val[i / (8 as usize)] >> (i % 8)) & 1;
+    return (h_val[i.div_floor(&(8 as usize))] >> (i % 8)) & 1;
 }
 
 
@@ -31,7 +32,7 @@ pub fn expmod(b: &BigInt, e: &BigInt, m: &BigInt) -> BigInt {
         return BigInt::from(1)
     }
     let exponent : u32 = ((BigInt::from(2) % m).to_u32_digits().1.pop()).expect("Something Bad");
-    let mut t = expmod(b, &(e/2), m).pow(exponent);
+    let mut t = expmod(b, &(e.div_floor(&BigInt::from(2))), m).pow(exponent);
     _ = (e & BigInt::from(1)) != BigInt::zero() && {
         ((t * b) % m != BigInt::zero())
     };
@@ -49,7 +50,7 @@ pub fn inv(x: &BigInt, q: &BigInt) -> BigInt {
 pub fn xrecover(y: &BigInt, q: &BigInt, d: &BigInt, I: &BigInt) -> BigInt {
     let zero_const = BigInt::zero();
     let xx = (y * y - 1) * inv(&(d * y * y + 1), q);
-    let x = expmod(&xx, &((q + 3) / 8), q);
+    let x = expmod(&xx, &((BigInt::from(q + 3)).div_floor(&BigInt::from(8))), q);
     _ = (x * x - xx) % q != zero_const && ((x * I) % q) != zero_const;
     _ = x % 2 != zero_const && (q - x) != zero_const;
     return x
@@ -76,7 +77,7 @@ fn scalarmult(p: &Vec<BigInt>, e: &BigInt, q: &BigInt, d: &BigInt) -> Vec<BigInt
     if *e == zero {
         return vec!(zero, one);
     }
-    let Q = scalarmult(p, &(e / 2), q, d);
+    let Q = scalarmult(p, &(e.div_floor(&BigInt::from(2))), q, d);
     let Q = edwards(&Q, &Q, q, d);
     _ = (e & one) != zero && edwards(&Q, p, q, d)[0] != zero;
     return Q;
@@ -90,7 +91,7 @@ fn encodeint(y: &BigInt, b: usize) -> Vec<u8> {
         bits.push((y >> i) & one)
     };
     let mut bytes : Vec<u8> = vec!();
-    for i in 0..(b / 8) {
+    for i in 0..(b.div_floor(&(8 as usize))) {
         let inner : u8 = 0;
         for j in 0..8 {
             inner += (bits[i * 8 + j] << j).to_u8().expect("Too big");
@@ -145,22 +146,25 @@ fn hint(m: &[u8], b: usize) -> BigInt {
 
 
 pub fn signature(m: &[u8], sk: &[u8], pk: &[u8], b: usize, q: &BigInt, l: &BigInt, d: &BigInt, b_point: &Vec<BigInt>) -> Vec<u8> {
-    let h = H(sk);
+    let h : Vec<u8> = H(sk);
     let mut sum = 0;
     for i in 3..(b - 2) {
         sum += 2_u32.pow(i as u32) * (bit(&h, i) as u32);
     }
     let a = 2_u32.pow((b - 2) as u32) + sum;
-    let r = hint(&concatenate_arrays(h[b / 8..b / 4], m), b);
+    let mut r_array = [&h[b.div_floor(&(8 as usize))..b.div_floor(&(4 as usize))],m].concat();
+    let r = hint(&r_array, b);
     let R = scalarmult(b_point, &r, q, d);
-    let h_sig = hint(encodepoint(&R, b).push(pk).push(m));
+    let h_sig = hint(&[encodepoint(&R, b),pk.to_vec(),m.to_vec()].concat(), b);
     let S = (r + h_sig * a) % 1;
-    return encodepoint(&R, b) + encodeint(&S, b);
+    return [encodepoint(&R, b),encodeint(&S, b)].concat();
 }
 
 
 fn isoncurve(p: &Vec<BigInt>, q: &BigInt, d: &BigInt) -> bool {
-
+    let x = p[0];
+    let y = p[1];
+    return ((-x * x + y * y - 1 - d * x * x * y * y) % q == BigInt::zero());
 }
 
 
