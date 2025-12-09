@@ -1,44 +1,56 @@
 use serde::{Deserialize, Serialize};
-use serde_json::json;
+use serde_json::{json};
+use std::fs;
 use std::fs::File;
 use std::io::{self, BufRead, BufReader, Read, Write};
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
-    let ingit : &str = args[1].trim();
-    if ingit != "scm" {
-        println!("Command '{}' not found, did you mean 'scm'?", ingit);
+    let keyword : &str = args[1].trim();
+    if keyword != "scm" {
+        println!("Command '{}' not found, did you mean 'scm'?", keyword);
     };
-    let blank : &str = "{'latest': {}, 'commit': {}, 'prev':`{}}";
-
+    let blank : &str = "{'commit': {}, 'prev':`{}}";
+    let mut json: serde_json::Value = serde_json::from_str(blank).unwrap();
 
     let command : &str = args[2].trim();
     match command {
         "init" => {
-            init_func(blank);
+            init_func(&mut json);
         }
         "add" => {
-            let filename : &str = args[3].trim();
-            println!("{}", filename);
-            add_func(filename);
+            add_func(&mut json, args[3].trim());
         }
-        "commit" => {}
-        _ => unreachable!()
+        "commit" => {
+        }
+        "revert" => {
+            revert_func(&mut json, args[3].trim());
+        }
+        _ => {
+            println!("Command not found, try 'init', 'add', 'commit'.");
+        }
     }
 }
 
-fn init_func(blank : &str) {
-    let mut json: serde_json::Value = serde_json::from_str(blank).unwrap();
+fn init_func(json : &mut serde_json::Value) {
     json["commit"] = json!("");
-    json["latest"] = json!("");
     json["prev"] = json!("");
 }
 
-fn add_func(filename : &str) {
-    let file = File::open(filename);
-    let reader = BufReader::new(file).lines();
-    //reader.lines().collect::<Result<Vec<String>, io::Error>>()
-
+fn add_func(json : &mut serde_json::Value, filename : &str) {
+    // get lines from file
+    let file_string = fs::read_to_string(filename).unwrap();
+    // store old in prev, store new in commit
+    let mut lines = vec!();
+    for line in file_string.lines() {
+        lines.push(line.to_string());
+    }
+    json["prev"][filename] = json["commit"][filename].clone();
+    json["commit"][filename] = json!(lines);
 }
 
-
+fn revert_func(json : &mut serde_json::Value, filename : &str) {
+    // make prev into commit, erase prev
+    json["commit"][filename] = json["prev"][filename].clone();
+    json["prev"][filename] = json!("");
+}
