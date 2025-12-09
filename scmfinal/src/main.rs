@@ -22,6 +22,8 @@ fn main() {
             add_func(&mut json, args[3].trim());
         }
         "commit" => {
+            let message = args[4].trim();
+            json["commit"]["message"] = json!(message);
         }
         "revert" => {
             revert_func(&mut json, args[3].trim());
